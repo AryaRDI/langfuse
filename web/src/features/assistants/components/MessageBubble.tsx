@@ -46,7 +46,7 @@ export function MessageBubble({
       {/* Message Content */}
       <div
         className={cn(
-          "max-w-[70%] space-y-1",
+          "max-w-[85%] space-y-1 sm:max-w-[70%]",
           isUser ? "text-right" : "text-left",
         )}
       >
@@ -59,19 +59,32 @@ export function MessageBubble({
         >
           <div className="whitespace-pre-wrap">
             {message.content === "..." && !isUser ? (
-              <div className="flex space-x-1 py-2">
-                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"></div>
-                <div
-                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
+              <div className="flex items-center space-x-2 py-3">
+                {/* Enhanced typing indicator */}
+                <div className="flex space-x-1">
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground opacity-75"></div>
+                  <div
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground opacity-75"
+                    style={{ animationDelay: "0.15s" }}
+                  ></div>
+                  <div
+                    className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground opacity-75"
+                    style={{ animationDelay: "0.3s" }}
+                  ></div>
+                </div>
+                <span className="text-xs italic text-muted-foreground">
+                  Assistant is typing...
+                </span>
               </div>
             ) : (
-              message.content
+              <div
+                className={cn(
+                  "transition-all duration-200",
+                  isOptimistic ? "opacity-90" : "opacity-100",
+                )}
+              >
+                {message.content}
+              </div>
             )}
           </div>
         </div>

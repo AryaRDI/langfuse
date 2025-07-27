@@ -1,56 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { api } from "@/src/utils/api";
 import { useRouter } from "next/router";
-
-/**
- * AssistantContext
- *
- * Manages global state for the Assistant feature:
- * - Selected conversation
- * - Message sending
- * - Optimistic updates
- */
-
-type Message = {
-  id: string;
-  conversationId: string;
-  sender: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  tokenCount?: number | null;
-  traceId?: string | null;
-};
-
-type Conversation = {
-  id: string;
-  projectId: string;
-  userId: string;
-  title: string | null;
-  startedAt: Date;
-  updatedAt: Date;
-  messages: Message[];
-  _count: {
-    messages: number;
-  };
-};
-
-type AssistantContextType = {
-  // Current state
-  selectedConversationId: string | null;
-  selectedConversation: Conversation | null;
-  isLoadingMessages: boolean;
-  isSendingMessage: boolean;
-
-  // Actions
-  selectConversation: (conversationId: string) => void;
-  createAndSelectConversation: () => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
-
-  // Data
-  conversations: Conversation[] | undefined;
-  isLoadingConversations: boolean;
-  messages: Message[] | undefined;
-};
+import { type AssistantContextType, type AssistantMessage } from "../types";
 
 const AssistantContext = createContext<AssistantContextType | null>(null);
 
@@ -71,7 +22,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     string | null
   >(null);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
+  const [optimisticMessages, setOptimisticMessages] = useState<
+    AssistantMessage[]
+  >([]);
+  const [error, setError] = useState<any>(null);
 
   // API queries
   const {
@@ -127,14 +81,22 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const createConversationMutation =
     api.assistants.createConversation.useMutation({
       onSuccess: (newConversation) => {
+        // Clear any previous errors
+        setError(null);
         // Refresh conversations list and select the new one
         refetchConversations();
         setSelectedConversationId(newConversation.id);
+      },
+      onError: (error) => {
+        console.error("Failed to create conversation:", error);
+        setError(error);
       },
     });
 
   const sendMessageMutation = api.assistants.sendMessage.useMutation({
     onSuccess: () => {
+      // Clear any previous errors
+      setError(null);
       // Don't clear optimistic messages immediately - let them merge naturally
       refetchConversations();
       refetchMessages();
@@ -144,7 +106,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         setOptimisticMessages([]);
       }, 500);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to send message:", error);
+      setError(error);
       // Clear optimistic messages on error
       setOptimisticMessages([]);
     },
@@ -170,6 +134,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       await createConversationMutation.mutateAsync({ projectId });
     } catch (error) {
       console.error("Failed to create conversation:", error);
+      // Error is already set in the mutation's onError callback
     }
   }, [projectId, createConversationMutation]);
 
@@ -180,24 +145,28 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       const messageContent = content.trim();
 
       // 1. Add optimistic user message immediately
-      const optimisticUserMessage: Message = {
+      const optimisticUserMessage: AssistantMessage = {
         id: `temp-user-${Date.now()}`,
         conversationId: selectedConversationId,
         sender: "user",
         content: messageContent,
         timestamp: new Date(),
+        tokenCount: null,
+        traceId: null,
       };
 
       setOptimisticMessages([optimisticUserMessage]);
       setIsSendingMessage(true);
 
       // 2. Add optimistic assistant loading message
-      const optimisticAssistantMessage: Message = {
+      const optimisticAssistantMessage: AssistantMessage = {
         id: `temp-assistant-${Date.now()}`,
         conversationId: selectedConversationId,
         sender: "assistant",
         content: "...", // This will be replaced when we get the real response
         timestamp: new Date(Date.now() + 100), // Slightly later timestamp
+        tokenCount: null,
+        traceId: null,
       };
 
       setOptimisticMessages([
@@ -213,6 +182,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         });
       } catch (error) {
         console.error("Failed to send message:", error);
+        // Error is already set in the mutation's onError callback
         setIsSendingMessage(false);
       }
     },
@@ -225,6 +195,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     selectedConversation,
     isLoadingMessages,
     isSendingMessage,
+
+    // Error state
+    error,
+    clearError: () => setError(null),
 
     // Actions
     selectConversation,

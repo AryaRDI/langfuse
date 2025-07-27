@@ -88,7 +88,10 @@ export const assistantsRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         projectId: z.string(),
-        content: z.string().min(1, "Message cannot be empty"),
+        content: z
+          .string()
+          .min(1, "Message cannot be empty")
+          .refine((val) => val.trim().length > 0, "Message cannot be empty"),
       }),
     )
     .mutation(async ({ input, ctx }) => {

@@ -1,23 +1,17 @@
 import React, { useEffect, useRef } from "react";
 import { MessageBubble } from "./MessageBubble";
 import { MessageInput } from "./MessageInput";
+import { ErrorDisplay } from "./ErrorDisplay";
 import { useAssistant } from "@/src/features/assistants/context/AssistantContext";
 import { Skeleton } from "@/src/components/ui/skeleton";
 
-/**
- * ChatInterface Component
- *
- * Main chat area showing:
- * - Messages in chronological order
- * - Message input at the bottom
- * - Loading states
- */
 export function ChatInterface() {
   const {
     selectedConversation,
     messages,
     isLoadingMessages,
-    isSendingMessage,
+    error,
+    clearError,
   } = useAssistant();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,7 +40,7 @@ export function ChatInterface() {
   return (
     <div className="flex h-full flex-col">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4">
         {!selectedConversation ? (
           /* Welcome State - shown when no conversation is selected */
           <div className="flex h-full items-center justify-center">
@@ -99,6 +93,22 @@ export function ChatInterface() {
           </div>
         )}
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="border-t border-border p-3 sm:p-4">
+          <ErrorDisplay
+            error={error}
+            onRetry={() => {
+              // Retry the last action based on error type
+              clearError();
+            }}
+            onDismiss={clearError}
+            variant="inline"
+            showSuggestions={true}
+          />
+        </div>
+      )}
 
       {/* Message Input - Always at bottom */}
       <div className="border-t border-border">
