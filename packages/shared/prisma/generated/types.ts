@@ -149,6 +149,11 @@ export const ActionExecutionStatus = {
 } as const;
 export type ActionExecutionStatus =
   (typeof ActionExecutionStatus)[keyof typeof ActionExecutionStatus];
+export const MessageSender = {
+  user: "user",
+  assistant: "assistant",
+} as const;
+export type MessageSender = (typeof MessageSender)[keyof typeof MessageSender];
 export type Account = {
   id: string;
   user_id: string;
@@ -320,6 +325,14 @@ export type Comment = {
   updated_at: Generated<Timestamp>;
   content: string;
   author_user_id: string | null;
+};
+export type Conversation = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  title: Generated<string | null>;
+  started_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
 };
 export type CronJobs = {
   name: string;
@@ -586,6 +599,15 @@ export type MembershipInvitation = {
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 };
+export type Message = {
+  id: string;
+  conversation_id: string;
+  sender: MessageSender;
+  content: string;
+  timestamp: Generated<Timestamp>;
+  token_count: number | null;
+  trace_id: string | null;
+};
 export type Model = {
   id: string;
   created_at: Generated<Timestamp>;
@@ -795,6 +817,7 @@ export type DB = {
   billing_meter_backups: BillingMeterBackup;
   blob_storage_integrations: BlobStorageIntegration;
   comments: Comment;
+  conversations: Conversation;
   cron_jobs: CronJobs;
   dashboard_widgets: DashboardWidget;
   dashboards: Dashboard;
@@ -811,6 +834,7 @@ export type DB = {
   llm_tools: LlmTool;
   media: Media;
   membership_invitations: MembershipInvitation;
+  messages: Message;
   models: Model;
   observation_media: ObservationMedia;
   observations: LegacyPrismaObservation;
